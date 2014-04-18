@@ -1,0 +1,171 @@
+<!doctype html>
+
+<html>
+  <style>
+    line {
+      cursor: -webkit-grab;
+    }
+  </style>
+  <body>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script>
+    var myData = [
+      { id: 'a', count: 25, colour: 'steelblue' },
+      { id: 'b', count: 75, colour: 'tomato' },
+      { id: 'c', count: 15, colour: 'teal' }
+    ];
+
+    for (var i = 0; i < myData.length; i++) {
+      myData[i].neighbour = myData[(i+1) % myData.length];
+    }
+
+    var width = 960,
+        height = 500,
+        size = Math.min(width, height) / 2,
+        radius = size - 10
+
+    var arc = d3.svg.arc()
+        .outerRadius(radius)
+        .innerRadius(0);
+
+    var pie = d3.layout.pie()
+        .sort(null)
+        .value(function(d) { return d.count; });
+
+    var pieData = pie(myData);
+
+    var svg = d3.select('body').append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    var stuff = svg.append('g')
+      .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
+
+    var arcsLayer = stuff.append('g').attr('id', 'frederick-d-orcslayer');
+    var linesLayer = stuff.append('g').attr('id', 'buffy-t-lineslayer');
+
+    // MOUSE STUFF
+    var currentSelected = null;
+
+    var mouseDown = function () {
+      currentSelected = this;
+
+      d3.select(window)
+        .on('mousemove', mouseMove)
+        .on('mouseup', mouseUp);
+    };
+
+    var mouseUp = function () {
+      console.log('mouseup');
+      d3.select(window)
+        .on('mousemove', null)
+        .on('mouseup', null);
+      currentSelected = null;
+    };
+
+    var normalize = function (angle) {
+      return (2 * Math.PI + angle ) % (2 * Math.PI)
+    };
+
+    var mouseMove = function () {
+
+      if (currentSelected) {
+        var line = d3.select(currentSelected);
+        var firstArc = line.datum();
+        var neighbour = firstArc.data.neighbour;
+        var secondArc = pieData[myData.indexOf(neighbour)];
+
+        var point = d3.mouse(stuff.node());
+        var newAngle = normalize(Math.atan2(point[1], point[0]) + Math.PI / 2);
+
+        /*
+          So we want to return whenever the startangle and endangle bcome too close
+        */
+        console.log(firstArc.data.colour);
+        console.log(firstArc.data.neighbour.colour);
+        console.log(firstArc.endAngle - firstArc.startAngle);
+
+        if (normalize(newAngle - normalize(firstArc.startAngle)) < 0.1 ||
+            normalize(normalize(secondArc.endAngle) - newAngle) < 0.1
+        ) {
+          console.log('i never happend');
+          console.log('colour:', firstArc.data.colour);
+          console.log('newAngle: ', newAngle);
+          console.log('startAngle: ', firstArc.startAngle);
+          console.log('normalized-startAngle: ', normalize(firstArc.startAngle));
+          console.log('endAngle: ', firstArc.endAngle);
+          console.log('normalized-endAngle: ', normalize(firstArc.endAngle));
+          return;
+        }
+        //console.log(newAngle * 180 / Math.PI);
+
+        firstArc.endAngle = newAngle;
+        secondArc.startAngle = newAngle;
+
+        if (firstArc.endAngle < firstArc.startAngle) {
+          firstArc.endAngle += Math.PI * 2;
+        }
+        if (secondArc.startAngle >= secondArc.endAngle) {
+          secondArc.startAngle -= Math.PI * 2;
+        }
+
+        /*var firstDelta = Math.abs(firstArc.endAngle - firstArc.startAngle);
+        var secondDelta = Math.abs(secondArc.endAngle - secondArc.startAngle);
+        var totalDelta = firstDelta + secondDelta;
+
+        var ratio = firstDelta / secondDelta;
+
+        firstArc.endAngle = secondArc.startAngle = firstArc.startAngle + totalDelta * ratio; */
+
+        /*var allArcs = d3.selectAll('.arc')[0].map(function (d) { return d3.select(d).dat ; })
+        neighbourArc = allArcs.filter(function (a) { return a.data === neighbour; })[0];
+
+        neighbourArc.startAngle = newAngle;
+
+        allArcs.forEach(function (a) {
+          //for each arc, update its underoilying data according to it's new angles
+
+          var normalizedAngle = Math.abs(a.startAngle - a.endAngle);
+          a.data.count = normalizedAngle * (radius - 10)
+        });
+        */
+
+        // pieData = pie(myData);
+
+        refresh();
+      }
+    };
+
+    var refresh = function () {
+      console.log('refresh');
+
+      var arcs = arcsLayer.selectAll('.arc')
+        .data(pieData);
+
+      arcs.enter().append('path')
+        .attr('class', 'arc')
+        .style('fill', function (d) { return d.data.colour; })
+        .style('opacity', 0.5);
+
+      arcs.attr('d', arc);
+
+      var lines = linesLayer.selectAll('line')
+        .data(pieData);
+
+      lines.enter().append('line')
+        .style('stroke', 'darkslategray')
+        .style('stroke-width', '3px')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .on('mousedown', mouseDown);
+
+      lines
+        .attr('x2', function (d) { return (radius ) * Math.sin( Math.PI - d.endAngle);})
+        .attr('y2', function (d) { return (radius ) * Math.cos( Math.PI - d.endAngle);});
+    }
+
+    refresh();
+
+  </script>
+</html>
+
