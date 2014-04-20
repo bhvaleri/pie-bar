@@ -11,8 +11,9 @@
   <script>
     var myData = [
       { id: 'a', count: 25, colour: 'steelblue' },
-      { id: 'b', count: 75, colour: 'tomato' },
-      { id: 'c', count: 15, colour: 'teal' }
+      { id: 'b', count: 25, colour: 'tomato' },
+      { id: 'c', count: 25, colour: 'teal' },
+      { id: 'd', count: 25, colour: 'plum' }
     ];
 
     for (var i = 0; i < myData.length; i++) {
@@ -68,7 +69,6 @@
     };
 
     var mouseMove = function () {
-
       if (currentSelected) {
         var line = d3.select(currentSelected);
         var firstArc = line.datum();
@@ -78,26 +78,16 @@
         var point = d3.mouse(stuff.node());
         var newAngle = normalize(Math.atan2(point[1], point[0]) + Math.PI / 2);
 
-        /*
-          So we want to return whenever the startangle and endangle bcome too close
-        */
-        console.log(firstArc.data.colour);
-        console.log(firstArc.data.neighbour.colour);
-        console.log(firstArc.endAngle - firstArc.startAngle);
 
-        if (normalize(newAngle - normalize(firstArc.startAngle)) < 0.1 ||
-            normalize(normalize(secondArc.endAngle) - newAngle) < 0.1
-        ) {
-          console.log('i never happend');
-          console.log('colour:', firstArc.data.colour);
-          console.log('newAngle: ', newAngle);
-          console.log('startAngle: ', firstArc.startAngle);
-          console.log('normalized-startAngle: ', normalize(firstArc.startAngle));
-          console.log('endAngle: ', firstArc.endAngle);
-          console.log('normalized-endAngle: ', normalize(firstArc.endAngle));
+        // there must be a better way
+        if (firstArc.startAngle > secondArc.endAngle) {
+          if (newAngle > secondArc.endAngle && newAngle < firstArc.startAngle) {
+            return;
+          }
+        }
+        else if (newAngle  < firstArc.startAngle || newAngle > secondArc.endAngle) {
           return;
         }
-        //console.log(newAngle * 180 / Math.PI);
 
         firstArc.endAngle = newAngle;
         secondArc.startAngle = newAngle;
@@ -137,8 +127,6 @@
     };
 
     var refresh = function () {
-      console.log('refresh');
-
       var arcs = arcsLayer.selectAll('.arc')
         .data(pieData);
 
